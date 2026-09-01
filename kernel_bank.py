@@ -2,6 +2,8 @@ from collections.abc import Sequence
 
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 
 
 DIRECTIONAL_ANGLES = (0.0, 22.5, 45.0, 90.0, 112.5, 135.0)
@@ -43,6 +45,57 @@ class KernelBank:
         for name, kernel in self.kernels.items():
             print(f"\n{name}:")
             print(np.round(kernel, 3))
+
+    def print_as_image(self) -> None:
+        number_of_kernels = len(self.kernels)
+        number_of_columns = min(3, number_of_kernels)
+        number_of_rows = int(np.ceil(number_of_kernels / number_of_columns))
+
+        figure, axes = plt.subplots(
+            number_of_rows,
+            number_of_columns,
+            figsize=(4 * number_of_columns, 4 * number_of_rows),
+            squeeze=False,
+        )
+
+        color_map = LinearSegmentedColormap.from_list(
+            "negative_red_positive_blue",
+            ["red", "white", "blue"],
+        )
+
+        for axis, (name, kernel) in zip(axes.flat, self.kernels.items()):
+            maximum_absolute_value = float(np.max(np.abs(kernel)))
+
+            # TwoSlopeNorm exige limites diferentes de zero.
+            if maximum_absolute_value == 0.0:
+                maximum_absolute_value = 1.0
+
+            normalization = TwoSlopeNorm(
+                vmin=-maximum_absolute_value,
+                vcenter=0.0,
+                vmax=maximum_absolute_value,
+            )
+
+            image = axis.imshow(
+                kernel,
+                cmap=color_map,
+                norm=normalization,
+                interpolation="nearest",
+            )
+            axis.set_title(name.replace("_", " "))
+            axis.set_xticks([])
+            axis.set_yticks([])
+            figure.colorbar(image, ax=axis, fraction=0.046, pad=0.04)
+
+        # Oculta os espaços vazios quando a quantidade de kernels não
+        # preenche completamente a última linha.
+        for axis in axes.flat[number_of_kernels:]:
+            axis.set_visible(False)
+
+        figure.suptitle("Banco de kernels", fontsize=14)
+        figure.tight_layout()
+        plt.show()
+ 
 
 
     # Cria definitivamente o banco do kernel

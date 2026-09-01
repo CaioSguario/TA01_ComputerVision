@@ -5,7 +5,7 @@ from image import Image
 
 kernel_bank = KernelBank()
 
-kernel_bank.print()
+kernel_bank.print_as_image()
 
 path = Path("./imagem_teste.png")
 img = Image(path, True)
