@@ -9,9 +9,9 @@ from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 DIRECTIONAL_ANGLES = (0.0, 22.5, 45.0, 90.0, 112.5, 135.0)
 
 
-# Banco de kernels contendo:
-# Filtros direcionais -> angulos definidos por angles
-# Filtros circulares (gaussiano e laplaciano do gaussiano) -> circular = True
+# Kernel bank with the following filters: 
+#   - Directional: one for each angle in angles 
+#   - circular: Gaussian and Laplacian if circular = True
 class KernelBank:
     def __init__(
         self,
@@ -40,12 +40,16 @@ class KernelBank:
         self.gamma = gamma
         self.phase = phase
         self.kernels= self._create_kernel_bank()
+        self.num_kernels=len(self.kernels)
 
+    # Print the kernel values as floats
     def print(self) -> None:
         for name, kernel in self.kernels.items():
             print(f"\n{name}:")
             print(np.round(kernel, 3))
 
+    # Prints the kernel as a red/blue image
+    #   red coloration defines negative numbers and blue positive
     def print_as_image(self) -> None:
         number_of_kernels = len(self.kernels)
         number_of_columns = min(3, number_of_kernels)
@@ -66,7 +70,7 @@ class KernelBank:
         for axis, (name, kernel) in zip(axes.flat, self.kernels.items()):
             maximum_absolute_value = float(np.max(np.abs(kernel)))
 
-            # TwoSlopeNorm exige limites diferentes de zero.
+            # TwoSlopeNorm needs limits other than zero
             if maximum_absolute_value == 0.0:
                 maximum_absolute_value = 1.0
 
@@ -87,8 +91,7 @@ class KernelBank:
             axis.set_yticks([])
             figure.colorbar(image, ax=axis, fraction=0.046, pad=0.04)
 
-        # Oculta os espaços vazios quando a quantidade de kernels não
-        # preenche completamente a última linha.
+        # Hides empty space in the last line of kernels
         for axis in axes.flat[number_of_kernels:]:
             axis.set_visible(False)
 
@@ -98,16 +101,15 @@ class KernelBank:
  
 
 
-    # Cria definitivamente o banco do kernel
     def _create_kernel_bank(self) -> dict[str, np.ndarray]:
 
-        # Filtros direcionais
+        # Directional filters
         kernels = {
             f"gabor_{angle:g}_graus": self._create_gabor_kernel(angle)
             for angle in self.angles
         }
 
-        # Filtros circulares
+        # Circular filters
         if self.circular:
             kernels["circular"] = self._create_circular_gaussian_kernel()
             kernels["laplaciana_circular"] = (
@@ -116,8 +118,8 @@ class KernelBank:
 
         return kernels
 
-    # Cria um kernel de gabor quadrado de tamanho = kernel_size
-    # Angulacao do filtro = angle_degrees
+    # Creates a square gabor kernel with size equal to kernel_size
+    # Filter angulation is defined by angle_degrees
     def _create_gabor_kernel(self, angle_degrees: float) -> np.ndarray:
         theta = np.deg2rad(angle_degrees)
 
@@ -134,8 +136,6 @@ class KernelBank:
         kernel -= kernel.mean()
         return kernel
     
-    # Cria um kernel de gabor circular (gaussiano) simetrico quadrado de tamanho = kernel_size
-    # Dispersao do filtro -> proporcional a sigma
     def _create_circular_gaussian_kernel(self) -> np.ndarray:
         radius_squared = self._create_radius_squared_grid()
         kernel = np.exp(-radius_squared / (2.0 * self.gaussian_sigma**2))
@@ -144,8 +144,6 @@ class KernelBank:
 
         return kernel.astype(np.float32)
 
-    # Cria um kernel de gabor circular (laplaciana do gaussiano) simetrico quadrado de tamanho = kernel_size
-    # Dispersao do filtro -> proporcional a sigma
     def _create_laplacian_of_gaussian_kernel(self) -> np.ndarray:
         radius_squared = self._create_radius_squared_grid()
         sigma_squared = self.gaussian_sigma**2
