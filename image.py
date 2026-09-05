@@ -1,6 +1,7 @@
 from pathlib import Path
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Image:
     def __init__(
@@ -37,11 +38,15 @@ class Image:
         if image is None:
             raise ValueError("No image to display")
 
-        cv2.imshow(title, image)
+        plt.figure()
 
-        cv2.waitKey(0)
+        if len(image.shape) == 2:
+            plt.imshow(image, cmap="gray")
+        else:
+            plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
-        cv2.destroyAllWindows()
+        plt.axis("off")
+        plt.show()
 
     def _color_to_grey(self) -> np.ndarray:
         if self.image is None:
